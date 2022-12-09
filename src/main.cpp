@@ -2,11 +2,10 @@
 #include <Adafruit_Sensor.h>
 #include <Arduino.h>
 #include <Bluetooth.h>
+#include <Motor.h>
 #include <WiFi.h>
 #include <Wire.h>
 #include <math.h>
-
-int motorPosition = 0;
 
 void setup() {
     Serial.begin(115200);
@@ -38,26 +37,20 @@ float easeInExpo(float x) {
     return x == 0 ? 0 : pow(2, 10 * x - 10);
 }
 
-bool flipped = false;
 void loop() {
-    if (motorPosition >= 100) {
-        flipped = true;
-    } else if (motorPosition <= 0) {
-        flipped = false;
-    }
+    if (motorSpeed != 0) {
+        if ((motorPosition >= 100 && motorSpeed > 0) || (motorPosition <= 0 && motorSpeed < 0)) {
+            return;
+        }
 
-    if (flipped) {
-        motorPosition--;
-    } else {
-        motorPosition++;
+        if (motorSpeed > 0) {
+            motorPosition += 1;
+        } else {
+            motorPosition -= 1;
+        }
     }
-
-    float progress = motorPosition / 100.0;
-    int delayTime = easeInExpo(progress) * 750 + 100;
 
     if (deviceConnected) {
-        // int txValue = random(-100, 100);
-
         char txString[8];
         dtostrf(motorPosition, 1, 2, txString);
 
@@ -66,10 +59,9 @@ void loop() {
         pTxCharacteristic->notify();
     }
 
-    delay(delayTime);  // bluetooth stack will go into congestion, if too many packets are sent
-
-    /**if (bluetoothAdvertising) {
-        blinkLED();
-        delay(1000);
-    }*/
+    if (motorSpeed != 0)
+        delay(1100 - (abs(motorSpeed) * 10));  // bluetooth stack will go into congestion, if too many packets are sent
+    else {
+        delay(100);
+    }
 }

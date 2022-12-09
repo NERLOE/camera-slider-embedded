@@ -7,6 +7,7 @@
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
+#include <Motor.h>
 #include <Settings.h>
 
 #define SERVICE_UUID "1f2d8a07-458d-44f0-a1b2-ecb92f5d3802"  // UART service UUID
@@ -36,6 +37,7 @@ class ServerCallbacks : public BLEServerCallbacks {
         deviceConnected = false;
         digitalWrite(ledPin, LOW);
         advertiseBLE();
+        motorSpeed = 0;
     }
 };
 
@@ -44,19 +46,12 @@ class CharacteristicCallbacks : public BLECharacteristicCallbacks {
         std::string rxValue = pCharacteristic->getValue();
 
         if (rxValue.length() > 0) {
-            Serial.print("BLE RX: ");
-            for (int i = 0; i < rxValue.length(); i++)
-                Serial.print(rxValue[i]);
-            Serial.println();
+            // parse float
+            // parse to int
+            int value = (int)(atof(rxValue.c_str()) * 100);
 
-            // Do stuff based on the command received from BLE Central
-            if (rxValue.find("1") != -1) {
-                Serial.println("Turning LED on");
-                digitalWrite(ledPin, HIGH);
-            } else if (rxValue.find("0") != -1) {
-                Serial.println("Turning LED off");
-                digitalWrite(ledPin, LOW);
-            }
+            Serial.println("Motor speed changed: " + String(value) + "%");
+            motorSpeed = value;
         }
     }
 };
