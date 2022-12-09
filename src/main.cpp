@@ -38,9 +38,16 @@ float easeInExpo(float x) {
     return x == 0 ? 0 : pow(2, 10 * x - 10);
 }
 
+bool flipped = false;
 void loop() {
     if (motorPosition >= 100) {
-        motorPosition = 0;
+        flipped = true;
+    } else if (motorPosition <= 0) {
+        flipped = false;
+    }
+
+    if (flipped) {
+        motorPosition--;
     } else {
         motorPosition++;
     }
