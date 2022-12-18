@@ -1,7 +1,7 @@
 #include <Bluetooth.h>
 
 BLEServer *pServer;
-BLECharacteristic *pTxCharacteristic;
+BLECharacteristic *sliderInfoCharacteristic;
 bool deviceConnected = false;
 bool bluetoothAdvertising = false;
 
@@ -29,12 +29,12 @@ void initBLE(std::string deviceName) {
     BLEService *pService = pServer->createService(SERVICE_UUID);
 
     // Create a Notifying BLE characteristic
-    pTxCharacteristic = pService->createCharacteristic(
-        CHARACTERISTIC_UUID_TX,
+    sliderInfoCharacteristic = pService->createCharacteristic(
+        CHARACTERISTIC_UUID_SLIDER_INFO,
         BLECharacteristic::PROPERTY_NOTIFY);
 
     // BLE2902 needed to notify
-    pTxCharacteristic->addDescriptor(new BLE2902());
+    sliderInfoCharacteristic->addDescriptor(new BLE2902());
 
     // Create a BLE characteristic for receiving data
     BLECharacteristic *pRxCharacteristic = pService->createCharacteristic(

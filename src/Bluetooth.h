@@ -1,7 +1,4 @@
 #pragma once
-
-// See the following for generating UUIDs:
-// https://www.uuidgenerator.net/
 #include <Arduino.h>
 #include <BLE2902.h>
 #include <BLEDevice.h>
@@ -10,14 +7,16 @@
 #include <Motor.h>
 #include <Settings.h>
 
+// See the following for generating UUIDs:
+// https://www.uuidgenerator.net/
 #define SERVICE_UUID "1f2d8a07-458d-44f0-a1b2-ecb92f5d3802"  // UART service UUID
-#define CHARACTERISTIC_UUID_TX "7719d3cf-bb84-4bc3-a705-fa06e2ccd285"
+#define CHARACTERISTIC_UUID_SLIDER_INFO "2da31897-6b1f-4a83-811a-28b234fdc232"
 #define CHARACTERISTIC_UUID_RX "593122f1-bc31-46ae-9521-2f86e2ea2740"
 
 // BLE Server
 extern BLEServer *pServer;
 /// Notify Characteristic
-extern BLECharacteristic *pTxCharacteristic;
+extern BLECharacteristic *sliderInfoCharacteristic;
 extern bool bluetoothAdvertising;
 extern bool deviceConnected;
 
@@ -37,7 +36,6 @@ class ServerCallbacks : public BLEServerCallbacks {
         deviceConnected = false;
         digitalWrite(ledPin, LOW);
         advertiseBLE();
-        motorSpeed = 0;
     }
 };
 
@@ -51,7 +49,6 @@ class CharacteristicCallbacks : public BLECharacteristicCallbacks {
             int value = (int)(atof(rxValue.c_str()) * 100);
 
             Serial.println("Motor speed changed: " + String(value) + "%");
-            motorSpeed = value;
         }
     }
 };
