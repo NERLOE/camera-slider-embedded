@@ -16,7 +16,7 @@ StepperMotor::StepperMotor(int directionPin, int stepPin, int enabledPin) {
     this->setEnabled(false);
 
     // Calculate initial time per step based on timeToTarget and targetPosition
-    this->timePerStep = ((double)this->timeToTarget / (double)this->targetPosition) * 1000;
+    this->timePerStep = (this->timeToTarget / (double)this->targetPosition) * 1000;
 };
 
 void StepperMotor::run() {
@@ -27,9 +27,9 @@ void StepperMotor::run() {
         int distanceToTarget = this->getDistanceToTarget();
 
         if (this->targetPosition < this->motorPosition && this->direction == 1) {
-            this->setDirection(0);
+            this->setDirection(BACKWARD);
         } else if (this->targetPosition > this->motorPosition && this->direction == 0) {
-            this->setDirection(1);
+            this->setDirection(FORWARD);
         }
 
         if (distanceToTarget > 0) {
@@ -37,17 +37,22 @@ void StepperMotor::run() {
             this->singleStep();
         } else if (this->targetPosition) {
             Serial.println("Distance to target: " + String(distanceToTarget) + " - targetPosition: " + String(this->targetPosition) + " - motorPosition: " + String(this->motorPosition));
-            // this->setDirection(this->direction == 1 ? 0 : 1);
-            //  this->setTargetPosition(this->targetPosition == 0 ? STEPS_PER_REVOLUTION * MICRO_STEPS * 10 : 0);
+            // this->setEnabled(false);
             delay(1000);
         }
     }
 };
 
-void StepperMotor::setTargetPosition(int targetPosition, int timeToTarget) {
+void StepperMotor::setTargetPosition(int targetPosition, double timeToTarget) {
     this->targetPosition = targetPosition;
     this->timeToTarget = timeToTarget;
-    this->timePerStep = timeToTarget == -1 ? 100 : ((double)this->timeToTarget / (double)this->targetPosition) * 1000;
+
+    int distanceToTarget = this->getDistanceToTarget();
+    this->timePerStep = timeToTarget == -1 ? 100 : (this->timeToTarget / (double)distanceToTarget) * 1000;
+
+    if (!this->isEnabled) {
+        this->setEnabled(true);
+    }
 };
 
 int StepperMotor::getDistanceToTarget() {
@@ -64,7 +69,7 @@ void StepperMotor::setEnabled(bool enabled) {
     digitalWrite(this->enabledPin, enabled ? LOW : HIGH);
 };
 
-void StepperMotor::setDirection(int dir) {
+void StepperMotor::setDirection(Direction dir) {
     this->direction = dir;
     digitalWriteFast(this->dirPin, dir == 1 ? HIGH : LOW);
 };
@@ -76,5 +81,6 @@ void StepperMotor::singleStep() {
     this->motorPosition += this->direction == 1 ? 1 : -1;
 }
 
-void distanceBetweenSteps() {
+Direction StepperMotor::getDirection() {
+    return this->direction;
 }

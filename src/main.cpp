@@ -10,6 +10,8 @@ void setup() {
     Serial.begin(115200);
     Serial.println("Initializing...");
 
+    preferences.begin("camslider", false);
+
     pinMode(ledPin, OUTPUT);
     pinMode(calibrationPin, INPUT_PULLUP);
 

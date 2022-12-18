@@ -10,6 +10,11 @@
 const int STEPS_PER_REVOLUTION = 200;
 const int MICRO_STEPS = 16;
 
+enum Direction {
+    FORWARD = 1,
+    BACKWARD = 0,
+};
+
 class StepperMotor {
    private:
     int dirPin;
@@ -18,14 +23,14 @@ class StepperMotor {
 
     // Variables
     long prevStepMicros = 0;
-    int direction = 1;
+    Direction direction = FORWARD;
 
     bool isCalibrating = false;
 
     // Calculate the time in microseconds to move one step
     double timePerStep;
 
-    void setDirection(int dir);
+    void setDirection(Direction dir);
     void singleStep();
 
    public:
@@ -35,7 +40,7 @@ class StepperMotor {
     int targetPosition = 0;
 
     // Time to reach target position (in milliseconds)
-    int timeToTarget = 100;
+    double timeToTarget = 100;
 
     // Whether the motor is enabled
     int isEnabled = false;
@@ -50,5 +55,7 @@ class StepperMotor {
 
     void setEnabled(bool enabled);
 
-    void setTargetPosition(int targetPosition, int timeToTarget = -1);
+    void setTargetPosition(int targetPosition, double timeToTarget = -1);
+
+    Direction getDirection();
 };
