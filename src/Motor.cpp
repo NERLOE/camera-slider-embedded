@@ -48,7 +48,11 @@ void StepperMotor::setTargetPosition(int targetPosition, double timeToTarget) {
     this->timeToTarget = timeToTarget;
 
     int distanceToTarget = this->getDistanceToTarget();
-    this->timePerStep = timeToTarget == -1 ? 100 : (this->timeToTarget / (double)distanceToTarget) * 1000;
+    this->timePerStep = timeToTarget == -1 ? 100 : _max(FASTEST_STEP_TIME, (this->timeToTarget / (double)distanceToTarget) * 1000);
+
+    if (timeToTarget) {
+        Serial.println("Moving motor from " + String(this->motorPosition) + " to " + String(this->targetPosition) + " (" + String(distanceToTarget) + " steps) in " + String((this->timePerStep * distanceToTarget) / 1000) + "ms - " + String(this->timePerStep / 1000) + "ms per step");
+    }
 
     if (!this->isEnabled) {
         this->setEnabled(true);
