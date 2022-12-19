@@ -6,6 +6,8 @@
 #include <BLEUtils.h>
 #include <Motor.h>
 #include <Settings.h>
+#include <Slider.h>
+#include <Utils.h>
 
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
@@ -44,11 +46,48 @@ class CharacteristicCallbacks : public BLECharacteristicCallbacks {
         std::string rxValue = pCharacteristic->getValue();
 
         if (rxValue.length() > 0) {
-            // parse float
-            // parse to int
-            int value = (int)(atof(rxValue.c_str()) * 100);
+            String value = rxValue.c_str();
 
-            Serial.println("Motor speed changed: " + String(value) + "%");
+            if (value.indexOf("CALIBRATE") != -1) {
+                sliderController.startCalibration();
+            } else if (value.indexOf("ANIMATE") != -1) {  // Start animation with a string like this "ANIMATE;(position),(duration),(stop time);1,0.5,0.5;2,0.5,0.5;...;...;"
+                Serial.println("Received animation command: " + value);
+                try {
+                    // Send the timeline to the slider controller
+                    std::vector<String> split = splitString(value, ";");
+
+                    Timeline timeline;
+
+                    for (int i = 1; i < split.size(); i++) {
+                        Serial.println("Keyframe: " + split[i]);
+                        std::vector<String> keyframe = splitString(split[i], ",");
+
+                        if (keyframe.size() < 3) {
+                            Serial.println("Invalid keyframe command: " + String(split[i]));
+                            break;
+                        }
+
+                        Serial.println("Keyframe length: " + String(keyframe.size()));
+
+                        Keyframe kf;
+                        Serial.println("Keyframe position: " + keyframe.at(0));
+                        kf.position = keyframe.at(0).toInt();
+                        Serial.println(kf.position);
+                        Serial.println("Keyframe duration: " + keyframe.at(1));
+                        kf.duration = keyframe.at(1).toDouble();
+                        Serial.println(kf.duration);
+                        Serial.println("Keyframe stopTime: " + keyframe.at(2));
+                        kf.stopTime = keyframe.at(2).toDouble();
+                        Serial.println(kf.stopTime);
+
+                        timeline.keyframes.push_back(kf);
+                    }
+
+                    sliderController.runTimeline(timeline);
+                } catch (const std::exception &e) {
+                    Serial.println("Error parsing animation command: " + String(e.what()));
+                }
+            }
         }
     }
 };

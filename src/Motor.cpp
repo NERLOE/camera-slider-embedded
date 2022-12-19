@@ -60,7 +60,7 @@ void StepperMotor::moveTo(int targetPosition, double timeToTarget) {
 };
 
 int StepperMotor::getDistanceToTarget() {
-    return this->direction == 1 ? this->targetPosition - this->motorPosition : this->motorPosition - this->targetPosition;
+    return abs(this->targetPosition - this->motorPosition);
 };
 
 double StepperMotor::getTimeLeft() {

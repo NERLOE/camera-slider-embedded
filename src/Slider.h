@@ -3,6 +3,8 @@
 #include <Arduino.h>
 #include <Motor.h>
 
+#include <vector>
+
 #define SLIDER_MOTOR_enabledPin 25
 #define SLIDER_MOTOR_dirPin 26
 #define SLIDER_MOTOR_stepPin 27
@@ -32,10 +34,8 @@ enum TimelineState {
 struct Timeline {
     std::vector<Keyframe> keyframes;
     int keyframeCount = 0;
-    TimelineState state = STARTING;
-    int startPos;
-    int endPos;
     int currentKeyframe = 0;
+    TimelineState state = STARTING;
 };
 
 class SliderController {

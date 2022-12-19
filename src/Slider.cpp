@@ -7,6 +7,24 @@ StepperMotor sliderStepper(SLIDER_MOTOR_dirPin, SLIDER_MOTOR_stepPin, SLIDER_MOT
 SliderController::SliderController() {
 }
 
+int getTimelineStart(Timeline timeline) {
+    return timeline.keyframes.at(0).position;
+}
+
+int getKeyframeCount(Timeline timeline) {
+    return timeline.keyframes.size();
+}
+
+int getTimelineDuration(Timeline timeline) {
+    int time = 0;
+
+    for (int i = 0; i < getKeyframeCount(timeline); i++) {
+        time += timeline.keyframes.at(i).duration + timeline.keyframes.at(i).stopTime;
+    }
+
+    return time;
+}
+
 void SliderController::init() {
     this->sliderLength = preferences.getInt("sliderLength", -1);
     // this->state = (SliderState)preferences.getInt("sliderState", SETUP);
@@ -16,54 +34,77 @@ void SliderController::init() {
     Serial.println("Initialized slider controller");
     Serial.println("Slider length: " + String(this->sliderLength));
 
-    if (this->sliderLength == -1) {
-        this->startCalibration();
-    } else {
+    if (this->sliderLength != -1) {
         this->setState(IDLE);
+    }
 
-        Timeline timeline;
+    /*     if (this->sliderLength == -1) {
+            this->startCalibration();
+        } else {
+            this->setState(IDLE);
 
-        Keyframe keyframe1;
-        keyframe1.duration = 2000;
-        keyframe1.position = 80000;
-        keyframe1.stopTime = 0;
+            Timeline timeline;
 
-        timeline.keyframes.push_back(keyframe1);
+            Keyframe keyframe1;
+            keyframe1.duration = 2000;
+            keyframe1.position = 10000;
+            keyframe1.stopTime = 0;
 
-        Keyframe keyframe2;
-        keyframe2.duration = 10000;
-        keyframe2.position = 100000;
-        keyframe2.stopTime = 0;
+            timeline.keyframes.push_back(keyframe1);
 
-        timeline.keyframes.push_back(keyframe2);
+            Keyframe keyframe2;
+            keyframe2.duration = 10000;
+            keyframe2.position = 100000;
+            keyframe2.stopTime = 2000;
 
-        timeline.keyframeCount = 2;
-        timeline.state = STARTING;
-        timeline.startPos = 10000;
-        timeline.endPos = 80000;
-        timeline.currentKeyframe = 0,
+            timeline.keyframes.push_back(keyframe2);
 
-        this->runTimeline(timeline);
-    };
+            Keyframe keyframe3;
+            keyframe3.duration = 5000;
+            keyframe3.position = 50000;
+            keyframe3.stopTime = 10000;
+
+            timeline.keyframes.push_back(keyframe3);
+
+            Keyframe keyframe4;
+            keyframe4.duration = 300000;
+            keyframe4.position = 80000;
+            keyframe4.stopTime = 0;
+
+            timeline.keyframes.push_back(keyframe4);
+
+            timeline.state = STARTING;
+            timeline.currentKeyframe = 0,
+
+            this->runTimeline(timeline);
+        }; */
 }
 
+long sliderStopTime = 0;
 void SliderController::runNextKeyframe() {
     Keyframe nextKeyframe = this->currentTimeline.keyframes.at(this->currentTimeline.currentKeyframe);
     Serial.println("Next keyframe: " + String(nextKeyframe.position) + " in " + String(nextKeyframe.duration) + "ms");
     sliderStepper.moveTo(nextKeyframe.position, nextKeyframe.duration);
+
+    if (nextKeyframe.stopTime > 0) {
+        Serial.println("Keyframe has stoptime, stopping motor in " + String(nextKeyframe.stopTime) + "ms");
+        sliderStopTime = micros() + (nextKeyframe.stopTime * 1000);
+    }
 }
 
 long lastSliderInfoUpdate = 0;
 void SliderController::run() {
     if (this->state == ANIMATING) {
-        if (this->currentTimeline.state == STARTING && sliderStepper.motorPosition == this->currentTimeline.startPos) {
-            Serial.println("Motor reached start position, starting timeline");
-            this->currentTimeline.state = RUNNING;
+        if (this->currentTimeline.state == STARTING) {
+            if (sliderStepper.motorPosition == getTimelineStart(this->currentTimeline)) {
+                Serial.println("Motor reached start position, starting timeline");
+                this->currentTimeline.state = RUNNING;
 
-            this->runNextKeyframe();
+                this->runNextKeyframe();
+            }
         } else if (this->currentTimeline.state == RUNNING && sliderStepper.motorPosition == this->currentTimeline.keyframes.at(this->currentTimeline.currentKeyframe).position) {
             this->currentTimeline.currentKeyframe++;
-            if (this->currentTimeline.currentKeyframe >= this->currentTimeline.keyframeCount) {
+            if (this->currentTimeline.currentKeyframe >= getKeyframeCount(this->currentTimeline)) {
                 Serial.println("Reached end of timeline, stopping motor");
                 this->currentTimeline.state = STOPPED;
 
@@ -77,6 +118,11 @@ void SliderController::run() {
     }
 
     if (this->state != IDLE && this->state != SETUP) {
+        long mics = micros();
+        if (sliderStopTime != 0 && sliderStopTime > mics) {
+            return;
+        }
+
         if (this->sliderLength != -1 && ((sliderStepper.motorPosition >= this->sliderLength && sliderStepper.getDirection() == FORWARD) || (sliderStepper.motorPosition <= 0 && sliderStepper.getDirection() == BACKWARD))) {
             // Dont move the motor if it has reached the end of the slider
             Serial.println("Stopping motor, reached end of slider");
@@ -84,7 +130,6 @@ void SliderController::run() {
             sliderStepper.run();
         }
 
-        long mics = micros();
         if (mics - lastSliderInfoUpdate >= 1000000) {
             lastSliderInfoUpdate = mics;
 
@@ -138,12 +183,12 @@ void SliderController::runTimeline(Timeline timeline) {
         return;
     }
 
-    Serial.println("Running timeline...");
+    Serial.println("Running timeline with " + String(getKeyframeCount(timeline)) + " keyframes, taking about " + String(getTimelineDuration(timeline)) + "ms");
 
     this->currentTimeline = timeline;
     this->setState(ANIMATING);
     sliderStepper.setEnabled(true);
-    sliderStepper.moveTo(timeline.startPos);
+    sliderStepper.moveTo(getTimelineStart(timeline));
 }
 
 void SliderController::setSliderLength(int length) {
