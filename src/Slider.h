@@ -28,12 +28,13 @@ struct Keyframe {
 enum TimelineState {
     STARTING,
     RUNNING,
-    STOPPED,
+    STOP_TIME,
+    PAUSED,
+    ENDED
 };
 
 struct Timeline {
     std::vector<Keyframe> keyframes;
-    int keyframeCount = 0;
     int currentKeyframe = 0;
     TimelineState state = STARTING;
 };

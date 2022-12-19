@@ -82,47 +82,55 @@ void SliderController::init() {
 
 long sliderStopTime = 0;
 void SliderController::runNextKeyframe() {
+    this->currentTimeline.currentKeyframe++;
     Keyframe nextKeyframe = this->currentTimeline.keyframes.at(this->currentTimeline.currentKeyframe);
     Serial.println("Next keyframe: " + String(nextKeyframe.position) + " in " + String(nextKeyframe.duration) + "ms");
     sliderStepper.moveTo(nextKeyframe.position, nextKeyframe.duration);
-
-    if (nextKeyframe.stopTime > 0) {
-        Serial.println("Keyframe has stoptime, stopping motor in " + String(nextKeyframe.stopTime) + "ms");
-        sliderStopTime = micros() + (nextKeyframe.stopTime * 1000);
-    }
 }
 
 long lastSliderInfoUpdate = 0;
 void SliderController::run() {
+    long mics = micros();
+
     if (this->state == ANIMATING) {
-        if (this->currentTimeline.state == STARTING) {
-            if (sliderStepper.motorPosition == getTimelineStart(this->currentTimeline)) {
-                Serial.println("Motor reached start position, starting timeline");
-                this->currentTimeline.state = RUNNING;
-
-                this->runNextKeyframe();
-            }
-        } else if (this->currentTimeline.state == RUNNING && sliderStepper.motorPosition == this->currentTimeline.keyframes.at(this->currentTimeline.currentKeyframe).position) {
-            this->currentTimeline.currentKeyframe++;
-            if (this->currentTimeline.currentKeyframe >= getKeyframeCount(this->currentTimeline)) {
-                Serial.println("Reached end of timeline, stopping motor");
-                this->currentTimeline.state = STOPPED;
-
-                this->setState(IDLE);
-                sliderStepper.setEnabled(false);
-            } else {
-                Serial.println("Motor reached keyframe position, starting next keyframe");
-                this->runNextKeyframe();
-            }
-        }
-    }
-
-    if (this->state != IDLE && this->state != SETUP) {
-        long mics = micros();
         if (sliderStopTime != 0 && sliderStopTime > mics) {
             return;
         }
 
+        Keyframe currentKeyframe = this->currentTimeline.keyframes.at(this->currentTimeline.currentKeyframe);
+        if (this->currentTimeline.state == STARTING) {
+            if (sliderStepper.motorPosition == getTimelineStart(this->currentTimeline)) {
+                Serial.println("Motor reached start position, starting timeline");
+
+                this->currentTimeline.state = RUNNING;
+                this->runNextKeyframe();
+            }
+        } else if (this->currentTimeline.state == RUNNING && sliderStepper.motorPosition == currentKeyframe.position) {
+            if (this->currentTimeline.currentKeyframe + 1 >= getKeyframeCount(this->currentTimeline)) {
+                Serial.println("Reached end of timeline, stopping motor");
+                this->currentTimeline.state = ENDED;
+
+                this->setState(IDLE);
+                sliderStepper.setEnabled(false);
+            } else {
+                if (currentKeyframe.stopTime > 0 && this->currentTimeline.state == RUNNING) {
+                    Serial.println("Keyframe has stoptime, stopping motor for " + String(currentKeyframe.stopTime) + "ms");
+                    sliderStopTime = micros() + (currentKeyframe.stopTime * 1000);
+                    this->currentTimeline.state = STOP_TIME;
+                    return;
+                }
+
+                Serial.println("Motor reached keyframe position, starting next keyframe");
+                this->runNextKeyframe();
+            }
+        } else if (this->currentTimeline.state == STOP_TIME && sliderStepper.motorPosition == currentKeyframe.position) {
+            Serial.println("Stoptime ended, moving to next keyframe");
+            this->currentTimeline.state = RUNNING;
+            this->runNextKeyframe();
+        }
+    }
+
+    if (this->state != IDLE && this->state != SETUP) {
         if (this->sliderLength != -1 && ((sliderStepper.motorPosition >= this->sliderLength && sliderStepper.getDirection() == FORWARD) || (sliderStepper.motorPosition <= 0 && sliderStepper.getDirection() == BACKWARD))) {
             // Dont move the motor if it has reached the end of the slider
             Serial.println("Stopping motor, reached end of slider");
