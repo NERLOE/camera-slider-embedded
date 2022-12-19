@@ -55,7 +55,7 @@ class StepperMotor {
 
     void setEnabled(bool enabled);
 
-    void setTargetPosition(int targetPosition, double timeToTarget = -1);
+    void moveTo(int targetPosition, double timeToTarget = -1);
 
     Direction getDirection();
 };

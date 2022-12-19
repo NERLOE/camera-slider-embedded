@@ -50,7 +50,7 @@ void SliderController::init() {
 void SliderController::runNextKeyframe() {
     Keyframe nextKeyframe = this->currentTimeline.keyframes.at(this->currentTimeline.currentKeyframe);
     Serial.println("Next keyframe: " + String(nextKeyframe.position) + " in " + String(nextKeyframe.duration) + "ms");
-    sliderStepper.setTargetPosition(nextKeyframe.position, nextKeyframe.duration);
+    sliderStepper.moveTo(nextKeyframe.position, nextKeyframe.duration);
 }
 
 long lastSliderInfoUpdate = 0;
@@ -102,7 +102,7 @@ void SliderController::startCalibration() {
     Serial.println("Starting calibration...");
     sliderStepper.motorPosition = 0;
     sliderStepper.setEnabled(true);
-    sliderStepper.setTargetPosition(-1000000000);
+    sliderStepper.moveTo(-1000000000);
 
     this->setSliderLength(-1);
     this->setState(CALIBRATING);
@@ -143,7 +143,7 @@ void SliderController::runTimeline(Timeline timeline) {
     this->currentTimeline = timeline;
     this->setState(ANIMATING);
     sliderStepper.setEnabled(true);
-    sliderStepper.setTargetPosition(timeline.startPos);
+    sliderStepper.moveTo(timeline.startPos);
 }
 
 void SliderController::setSliderLength(int length) {

@@ -43,7 +43,7 @@ void StepperMotor::run() {
     }
 };
 
-void StepperMotor::setTargetPosition(int targetPosition, double timeToTarget) {
+void StepperMotor::moveTo(int targetPosition, double timeToTarget) {
     this->targetPosition = targetPosition;
     this->timeToTarget = timeToTarget;
 
