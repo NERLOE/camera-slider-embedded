@@ -148,6 +148,7 @@ void SliderController::runTimeline(Timeline timeline) {
 
 void SliderController::setSliderLength(int length) {
     this->sliderLength = length;
+    this->updateSliderInfo();
     preferences.putInt("sliderLength", length);
 }
 
@@ -161,5 +162,6 @@ SliderState SliderController::getState() {
 
 void SliderController::setState(SliderState state) {
     this->state = state;
+    this->updateSliderInfo();
     preferences.putInt("sliderState", state);
 }
